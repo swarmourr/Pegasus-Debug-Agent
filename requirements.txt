@@ -1,43 +1,27 @@
-# ── Core service ──────────────────────────────────────────────────────────────
-fastapi==0.141.1
-uvicorn[standard]==0.52.4
+# Generated from pyproject.toml — install with: pip install -e ".[dev]"
+# For production:  pip install pegasus-healer
+
+# ── Core ───────────────────────────────────────────────────────────────────────
 pydantic==2.13.4
 pydantic-settings==2.15.0
-python-multipart==0.0.32
-python-dotenv==1.2.3
 
-# ── LangGraph / AI ────────────────────────────────────────────────────────────
+# ── LangGraph ─────────────────────────────────────────────────────────────────
 langgraph==1.2.11
-langgraph-checkpoint==4.2.0
-langgraph-checkpoint-postgres==3.1.2
 langgraph-checkpoint-sqlite==3.1.1
-openai==2.54.0
-anthropic==1.6.0
-instructor==1.15.4
-
-# ── Database ──────────────────────────────────────────────────────────────────
-SQLAlchemy==2.0.52
-alembic==1.19.1
-asyncpg==0.31.0
-psycopg==3.3.4
 aiosqlite==0.22.1
 
-# ── Messaging ─────────────────────────────────────────────────────────────────
-aio-pika==10.0.1
-
-# ── Cache / locking ───────────────────────────────────────────────────────────
-redis==8.1.0
+# ── LLM ───────────────────────────────────────────────────────────────────────
+litellm>=1.40.0
+instructor==1.15.4
 
 # ── Observability ─────────────────────────────────────────────────────────────
 structlog==26.1.0
-prometheus_client==0.26.0
 opentelemetry-sdk==1.44.0
-opentelemetry-instrumentation-fastapi==0.65b0
 opentelemetry-exporter-otlp==1.44.0
 
-# ── HTTP / utilities ──────────────────────────────────────────────────────────
-httpx==0.28.1
+# ── Utilities ─────────────────────────────────────────────────────────────────
 PyYAML==6.0.3
+python-dotenv==1.2.3
 
 # ── Dev / testing ─────────────────────────────────────────────────────────────
 pytest==9.1.1
@@ -45,4 +29,3 @@ pytest-asyncio==1.4.0
 pytest-cov==7.1.0
 ruff==0.16.4
 mypy==2.3.1
-testcontainers==4.15.0
