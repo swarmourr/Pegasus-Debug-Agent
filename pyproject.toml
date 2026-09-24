@@ -59,8 +59,7 @@ dev = [
 ]
 
 [project.scripts]
-# Installed CLI command — replaces scripts/pegasus_post_script.py
-pegasus-healer = "app.scripts.healer:main"
+pegasus-healer = "Pegasus.healer.cli.healer:main"
 
 [project.urls]
 Homepage = "https://pegasus.isi.edu"
@@ -68,8 +67,7 @@ Repository = "https://github.com/pegasus-isi/pegasus"
 Issues = "https://github.com/pegasus-isi/pegasus/issues"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["app*"]
+where = ["src"]
 
 # ── Ruff (lint + format) ──────────────────────────────────────────────────────
 [tool.ruff]
@@ -98,12 +96,12 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src", "."]
 filterwarnings = ["ignore::DeprecationWarning", "ignore::ResourceWarning"]
 
 # ── Coverage ──────────────────────────────────────────────────────────────────
 [tool.coverage.run]
-source = ["app"]
+source = ["Pegasus.healer"]
 omit = ["tests/*", "scripts/*", "workflows/*"]
 
 [tool.coverage.report]
