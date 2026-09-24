@@ -1,0 +1,49 @@
+#!/bin/bash
+# hello — first stage of the hello-world workflow
+# Usage: hello -T <sleep_secs> -i <input_file> -o <output_file>
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: hello -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "hello: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "hello: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "hello: input file not found: $INPUT" >&2; exit 1; }
+
+# --- Simulate OOM on first attempt ------------------------------------------
+# Use the Pegasus submit dir (stable across all retries) for the marker.
+# The job scratch dir (initialdir) is cleaned after each attempt.
+# _PEGASUS_WF_SUBMIT_DIR is injected by Pegasus into the job environment.
+_SIM_DIR="${_PEGASUS_WF_SUBMIT_DIR:-/tmp}"
+MARKER="${_SIM_DIR}/hello_sim.attempts"
+ATTEMPT=$(cat "$MARKER" 2>/dev/null || echo 0)
+echo $((ATTEMPT + 1)) > "$MARKER"
+
+if [ "$ATTEMPT" -lt 1 ]; then
+    echo "MemoryError: job exceeded memory limit — killed by signal 9" >&2
+    echo "Memory usage exceeded RequestMemory (1 MB)" >&2
+    exit 137   # 128 + SIGKILL(9) — real Linux OOM kill code
+fi
+# ----------------------------------------------------------------------------
+
+sleep "$SLEEP"
+
+{
+    echo "=== hello stage ==="
+    cat "$INPUT"
+    echo "Processed by: hello"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "hello: wrote $OUTPUT"

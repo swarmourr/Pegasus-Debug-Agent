@@ -1,0 +1,33 @@
+#!/bin/bash
+# report — second stage of the disk-demo workflow
+# Usage: report -T <sleep_secs> -i <input_file> -o <output_file>
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: report -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "report: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "report: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "report: input file not found: $INPUT" >&2; exit 1; }
+
+sleep "$SLEEP"
+
+{
+    echo "=== report stage ==="
+    cat "$INPUT"
+    echo "Reported by: report"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "report: wrote $OUTPUT"

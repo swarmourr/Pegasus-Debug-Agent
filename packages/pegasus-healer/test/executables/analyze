@@ -1,0 +1,48 @@
+#!/bin/bash
+# analyze — first stage of the disk-demo workflow
+# Usage: analyze -T <sleep_secs> -i <input_file> -o <output_file>
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: analyze -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "analyze: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "analyze: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "analyze: input file not found: $INPUT" >&2; exit 1; }
+
+# --- Simulate disk exhaustion on first attempt --------------------------------
+# Use the workflow submit dir (stable across retries) for the attempt marker.
+_SIM_DIR="${_PEGASUS_WF_SUBMIT_DIR:-/tmp}"
+MARKER="${_SIM_DIR}/analyze_sim.attempts"
+ATTEMPT=$(cat "$MARKER" 2>/dev/null || echo 0)
+echo $((ATTEMPT + 1)) > "$MARKER"
+
+if [ "$ATTEMPT" -lt 1 ]; then
+    echo "analyze: writing intermediate results (requesting 8192 MB scratch space)..." >&2
+    echo "write: /scratch/analyze_workdir/chunk_0000.dat: No space left on device" >&2
+    echo "analyze: disk quota exceeded — cannot write output, aborting" >&2
+    exit 1
+fi
+# -----------------------------------------------------------------------------
+
+sleep "$SLEEP"
+
+{
+    echo "=== analyze stage ==="
+    cat "$INPUT"
+    echo "Analyzed by: analyze"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "analyze: wrote $OUTPUT"
