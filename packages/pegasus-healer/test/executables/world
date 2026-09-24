@@ -1,0 +1,33 @@
+#!/bin/bash
+# world — second stage of the hello-world workflow
+# Usage: world -T <sleep_secs> -i <input_file> -o <output_file>
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: world -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "world: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "world: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "world: input file not found: $INPUT" >&2; exit 1; }
+
+sleep "$SLEEP"
+
+{
+    echo "=== world stage ==="
+    cat "$INPUT"
+    echo "Processed by: world"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "world: wrote $OUTPUT"

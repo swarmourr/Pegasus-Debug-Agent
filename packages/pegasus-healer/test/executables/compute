@@ -1,0 +1,52 @@
+#!/bin/bash
+# compute — parallel stage of the sibling-demo workflow
+# Usage: compute -T <sleep_secs> -i <input_file> -o <output_file>
+#
+# Simulates OOM on the first attempt (exit 137) using a per-output marker
+# so each parallel sibling tracks its own retry count independently.
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: compute -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "compute: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "compute: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "compute: input file not found: $INPUT" >&2; exit 1; }
+
+# --- Simulate OOM on first attempt -------------------------------------------
+# Marker is keyed on the output basename so each sibling fails independently.
+_SIM_DIR="${_PEGASUS_WF_SUBMIT_DIR:-/tmp}"
+OUTPUT_KEY=$(basename "$OUTPUT" .out)
+MARKER="${_SIM_DIR}/compute_sim_${OUTPUT_KEY}.attempts"
+ATTEMPT=$(cat "$MARKER" 2>/dev/null || echo 0)
+echo $((ATTEMPT + 1)) > "$MARKER"
+
+if [ "$ATTEMPT" -lt 1 ]; then
+    echo "compute: Killed" >&2
+    echo "compute: out of memory (signal 9) — terminating" >&2
+    exit 137
+fi
+# -----------------------------------------------------------------------------
+
+sleep "$SLEEP"
+
+{
+    echo "=== compute stage ==="
+    echo "output: $OUTPUT_KEY"
+    cat "$INPUT"
+    echo "Computed by: compute"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "compute: wrote $OUTPUT"

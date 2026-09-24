@@ -1,0 +1,40 @@
+#!/bin/bash
+# merge — final aggregation stage of the sibling-demo workflow
+# Usage: merge -T <sleep_secs> -o <output_file> -i <input1> [-i <input2> ...]
+
+set -euo pipefail
+
+SLEEP=0
+OUTPUT=""
+INPUTS=()
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUTS+=("$OPTARG") ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: merge -T secs -o output -i input ..." >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$OUTPUT" ] && { echo "merge: missing -o output" >&2; exit 1; }
+[ "${#INPUTS[@]}" -eq 0 ] && { echo "merge: no -i inputs provided" >&2; exit 1; }
+
+for f in "${INPUTS[@]}"; do
+    [ ! -f "$f" ] && { echo "merge: input file not found: $f" >&2; exit 1; }
+done
+
+sleep "$SLEEP"
+
+{
+    echo "=== merge stage ==="
+    echo "inputs: ${#INPUTS[@]}"
+    for f in "${INPUTS[@]}"; do
+        echo "--- $(basename "$f") ---"
+        cat "$f"
+    done
+    echo "Merged by: merge"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "merge: wrote $OUTPUT (${#INPUTS[@]} inputs)"

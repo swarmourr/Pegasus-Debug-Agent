@@ -1,0 +1,59 @@
+#!/bin/bash
+# multi_fail — simulates a sequence of different failures across retries.
+#
+# Attempt 0  → exit 137  (OOM / SIGKILL)           healer should increase memory
+# Attempt 1  → exit 1    (disk full in stderr)      healer should increase disk
+# Attempt 2+ → success
+#
+# Usage: multi_fail -T <sleep_secs> -i <input_file> -o <output_file>
+
+set -euo pipefail
+
+SLEEP=0
+INPUT=""
+OUTPUT=""
+
+while getopts "T:i:o:" opt; do
+    case "$opt" in
+        T) SLEEP="$OPTARG" ;;
+        i) INPUT="$OPTARG" ;;
+        o) OUTPUT="$OPTARG" ;;
+        *) echo "Usage: multi_fail -T secs -i input -o output" >&2; exit 1 ;;
+    esac
+done
+
+[ -z "$INPUT"  ] && { echo "multi_fail: missing -i input"  >&2; exit 1; }
+[ -z "$OUTPUT" ] && { echo "multi_fail: missing -o output" >&2; exit 1; }
+[ ! -f "$INPUT" ] && { echo "multi_fail: input file not found: $INPUT" >&2; exit 1; }
+
+# Track attempt count in the submit dir so the count survives across retries.
+# (Each HTCondor retry gets a fresh scratch dir, but the submit dir is stable.)
+_SIM_DIR="${_PEGASUS_WF_SUBMIT_DIR:-/tmp}"
+MARKER="${_SIM_DIR}/multi_fail_sim.attempts"
+ATTEMPT=$(cat "$MARKER" 2>/dev/null || echo 0)
+echo $((ATTEMPT + 1)) > "$MARKER"
+
+if [ "$ATTEMPT" -lt 1 ]; then
+    # ── Attempt 0: simulate OOM ────────────────────────────────────────────────
+    echo "MemoryError: job exceeded memory limit — killed by signal 9" >&2
+    echo "Memory usage exceeded RequestMemory limit" >&2
+    exit 137   # 128 + SIGKILL(9) — standard Linux OOM-kill exit code
+
+elif [ "$ATTEMPT" -lt 2 ]; then
+    # ── Attempt 1: simulate disk exhaustion ───────────────────────────────────
+    echo "OSError: [Errno 28] No space left on device" >&2
+    echo "write error: disk quota exceeded — cannot write output file" >&2
+    exit 1
+fi
+
+# ── Attempt 2+: success ────────────────────────────────────────────────────────
+sleep "$SLEEP"
+
+{
+    echo "=== multi_fail stage ==="
+    cat "$INPUT"
+    echo "Processed by: multi_fail (attempt $ATTEMPT)"
+    echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+} > "$OUTPUT"
+
+echo "multi_fail: wrote $OUTPUT"
